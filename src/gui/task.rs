@@ -118,17 +118,17 @@ pub fn run_task(params: TaskParams, sender: Sender<TaskMessage>) {
 pub fn load_sheet_preview(
     path: &std::path::Path,
 ) -> crate::error::Result<Vec<(String, Vec<String>)>> {
-    use calamine::{open_workbook, DataType, Reader, Xlsx};
+    use calamine::{Data, Reader, Xlsx};
 
     let mut wb: Xlsx<_> = calamine::open_workbook(path)
-        .map_err(crate::error::AppError::Calamine)?;
+        .map_err(|e: calamine::XlsxError| crate::error::AppError::Calamine(e.to_string()))?;
     let names = wb.sheet_names().to_vec();
 
     let mut result = Vec::new();
     for name in &names {
         let range = wb
             .worksheet_range(name)
-            .map_err(crate::error::AppError::Calamine)?;
+            .map_err(|e: calamine::XlsxError| crate::error::AppError::Calamine(e.to_string()))?;
 
         // 取第一行作为列名预览
         let columns: Vec<String> = if range.height() > 0 {
@@ -137,9 +137,9 @@ pub fn load_sheet_preview(
                     range
                         .get_value((0, c as u32))
                         .map(|v| match v {
-                            DataType::String(s) => s.clone(),
-                            DataType::Float(f) => f.to_string(),
-                            DataType::Int(i) => i.to_string(),
+                            Data::String(s) => s.clone(),
+                            Data::Float(f) => f.to_string(),
+                            Data::Int(i) => i.to_string(),
                             _ => String::new(),
                         })
                         .unwrap_or_default()

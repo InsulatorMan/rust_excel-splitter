@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use calamine::DataType;
+use calamine::Data;
 use rust_xlsxwriter::Workbook;
 
 use crate::config::{AppConfig, FormulaMode};
@@ -103,40 +101,47 @@ fn write_cell(
     worksheet: &mut rust_xlsxwriter::Worksheet,
     row: u32,
     col: u16,
-    cell: &DataType,
+    cell: &Data,
     _formula_mode: &FormulaMode,
 ) -> Result<()> {
     match cell {
-        DataType::String(s) => {
+        Data::String(s) => {
             worksheet.write_string(row, col, s)
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Float(f) => {
+        Data::Float(f) => {
             worksheet.write_number(row, col, *f)
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Int(i) => {
+        Data::Int(i) => {
             worksheet.write_number(row, col, *i as f64)
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Bool(b) => {
+        Data::Bool(b) => {
             worksheet.write_boolean(row, col, *b)
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::DateTime(d) => {
-            worksheet.write_number(row, col, *d)
+        Data::DateTime(dt) => {
+            worksheet.write_number(row, col, dt.as_f64_days())
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Duration(d) => {
-            worksheet.write_number(row, col, *d)
+        Data::DateTimeIso(s) => {
+            worksheet.write_string(row, col, s)
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Error(e) => {
+        Data::DurationIso(s) => {
+            worksheet.write_string(row, col, s)
+                .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
+        }
+        Data::Error(e) => {
             worksheet.write_string(row, col, &format!("#ERROR: {:?}", e))
                 .map_err(|e| AppError::XlsxWriter(e.to_string()))?;
         }
-        DataType::Empty => {
+        Data::Empty => {
             // 空单元格，不写入
+        }
+        Data::Duration(_) => {
+            // Duration 不常见，跳过
         }
     }
     Ok(())

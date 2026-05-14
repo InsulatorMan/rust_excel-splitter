@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use calamine::DataType;
+use calamine::Data;
 
 use crate::config::AppConfig;
 use crate::error::{AppError, Result};
@@ -30,10 +30,10 @@ pub fn plan_outputs(config: &AppConfig, wb: &WorkbookData) -> Result<Vec<OutputG
         for (row_idx, row) in sheet.rows.iter().enumerate() {
             let key = if col_idx < row.len() {
                 match &row[col_idx] {
-                    DataType::String(s) if !s.is_empty() => s.clone(),
-                    DataType::Float(f) => f.to_string(),
-                    DataType::Int(i) => i.to_string(),
-                    DataType::Bool(b) => b.to_string(),
+                    Data::String(s) if !s.is_empty() => s.clone(),
+                    Data::Float(f) => f.to_string(),
+                    Data::Int(i) => i.to_string(),
+                    Data::Bool(b) => b.to_string(),
                     _ => config.empty_key_label.clone(),
                 }
             } else {

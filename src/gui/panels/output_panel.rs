@@ -1,6 +1,6 @@
 //! 输出选项面板
 
-use egui::{Color32, Grid, RichText};
+use egui::{Grid, RichText};
 use crate::config::FormulaMode;
 use crate::gui::app::AppState;
 

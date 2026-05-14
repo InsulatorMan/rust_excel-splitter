@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use calamine::{open_workbook, DataType, Reader, Xlsx};
+use calamine::{open_workbook, Data, Reader, Xlsx};
 
 use crate::config::SplitSheetConfig;
 use crate::error::{AppError, Result};
@@ -18,7 +18,7 @@ pub struct WorkbookData {
 pub struct SheetData {
     pub name: String,
     pub headers: Vec<String>,
-    pub rows: Vec<Vec<DataType>>,
+    pub rows: Vec<Vec<Data>>,
     pub column_index: HashMap<String, usize>,
 }
 
@@ -28,7 +28,7 @@ pub fn load_workbook(
     split_configs: &[SplitSheetConfig],
 ) -> Result<WorkbookData> {
     let mut wb: Xlsx<_> = open_workbook(path)
-        .map_err(|e| AppError::Calamine(e.to_string()))?;
+        .map_err(|e: calamine::XlsxError| AppError::Calamine(e.to_string()))?;
     
     let sheet_names = wb.sheet_names().to_vec();
     let mut sheets = HashMap::new();
@@ -36,7 +36,7 @@ pub fn load_workbook(
     for name in &sheet_names {
         let range = wb
             .worksheet_range(name)
-            .map_err(|e| AppError::Calamine(e.to_string()))?;
+            .map_err(|e: calamine::XlsxError| AppError::Calamine(e.to_string()))?;
         
         let mut headers = Vec::new();
         let mut rows = Vec::new();
@@ -53,9 +53,9 @@ pub fn load_workbook(
             for col in 0..width {
                 let cell = range.get_value((header_row_idx as u32, col as u32));
                 let header = match cell {
-                    Some(DataType::String(s)) => s.clone(),
-                    Some(DataType::Float(f)) => f.to_string(),
-                    Some(DataType::Int(i)) => i.to_string(),
+                    Some(Data::String(s)) => s.clone(),
+                    Some(Data::Float(f)) => f.to_string(),
+                    Some(Data::Int(i)) => i.to_string(),
                     _ => format!("Column{}", col + 1),
                 };
                 column_index.insert(header.clone(), col);
@@ -67,7 +67,7 @@ pub fn load_workbook(
                 let mut row = Vec::new();
                 for col in 0..width {
                     let cell = range.get_value((row_idx as u32, col as u32));
-                    row.push(cell.cloned().unwrap_or(DataType::Empty));
+                    row.push(cell.cloned().unwrap_or(Data::Empty));
                 }
                 rows.push(row);
             }

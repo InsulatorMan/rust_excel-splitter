@@ -71,7 +71,10 @@ impl eframe::App for ExcelSplitterApp {
 
 impl ExcelSplitterApp {
     fn poll_task_messages(&mut self, ctx: &egui::Context) {
-        let Some(receiver) = &self.state.msg_receiver else { return };
+        let receiver = match self.state.msg_receiver.clone() {
+            Some(r) => r,
+            None => return,
+        };
 
         // 批量收取，避免阻塞
         for _ in 0..50 {
@@ -88,12 +91,14 @@ impl ExcelSplitterApp {
                     self.state.task_state = TaskState::Success { file_count };
                     self.state.msg_receiver = None;
                     ctx.request_repaint();
+                    break;
                 }
                 Ok(crate::gui::app::TaskMessage::Error(e)) => {
                     self.state.task_state = TaskState::Failed { error: e.clone() };
                     self.state.add_log(format!("错误: {}", e));
                     self.state.msg_receiver = None;
                     ctx.request_repaint();
+                    break;
                 }
                 Err(_) => break,
             }
@@ -155,7 +160,7 @@ fn render_action_bar(ui: &mut egui::Ui, state: &mut AppState) {
         if let Some(dir) = &state.output_dir.clone() {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.small_button("打开输出目录").clicked() {
-                    let _ = open::that(dir);
+                    let _ = std::process::Command::new("explorer").arg(dir).spawn();
                 }
             });
         }
@@ -173,7 +178,7 @@ fn start_task(state: &mut AppState) {
     state.msg_receiver = Some(rx);
     state.task_state = TaskState::Running;
     state.progress = (0, 0);
-    state.add_log("开始执行...".into());
+    state.add_log(String::from("开始执行..."));
 
     let params = TaskParams {
         input: state.input_path.clone().unwrap(),
